@@ -164,8 +164,6 @@ def scatterplot_is_zoomed(scatterplot, zoom_data):
                 xanchor="center",
                 yanchor="middle",
             )
-        return fig
-
     return fig
 
 @callback(
