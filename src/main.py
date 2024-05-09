@@ -14,6 +14,8 @@ from src.Dataset import Dataset
 from dash import Dash, html, dcc, Output, Input, callback, State
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
+from dash_holoniq_wordcloud import DashWordcloud
+
 
 IMAGE_GALLERY_SIZE = 36
 IMAGE_GALLERY_ROW_SIZE = 4
@@ -72,9 +74,16 @@ def run_ui():
         }
     )
 
-    wordcloud_image = html.Img(
+    wordcloud = DashWordcloud(
         id='wordcloud',
-        className='border-widget',
+        list=[],#group_by_count[['class_name', 'count_in_selection']].values,
+        width=600, height=600,
+        gridSize=16,
+        backgroundColor='white',
+        shuffle=False,
+        rotateRatio=0.5,
+        shape='square',
+        hover=True,
     )
 
     gallery_card = dbc.Card(
@@ -88,7 +97,7 @@ def run_ui():
         projection_radio_buttons,
         dbc.Row([
             dbc.Col(scatterplot, width=True, className='main-col'),
-            dbc.Col(wordcloud_image, width='auto', align="center")],
+            dbc.Col(wordcloud, width='auto', align="center")],
             className='g-10 main-row', justify='between'),
         dbc.Row([
             dbc.Col(table, className='main-col'),
@@ -189,7 +198,7 @@ def radio_button_is_clicked(radio_button_value):
 
 
 @callback(
-    [Output('wordcloud', 'src'),
+    [Output('wordcloud', 'list'),
      Output("table", "rowData"),
      Output("gallery", "children")],
     Input('scatterplot', 'selectedData'),
@@ -206,14 +215,8 @@ def scatterplot_is_updated(selected_data):
         'count_in_selection').reset_index()
     group_by_count['total_count'] = Dataset.class_count().loc[group_by_count['class_id']].values
 
+    wordcloud_data = group_by_count[['class_name', 'count_in_selection']].values
     table_records = group_by_count.sort_values('count_in_selection', ascending=False).to_dict("records")
-
-    counts = {row['class_name']: row['count_in_selection'] for _, row in group_by_count.iterrows()}
-    img = BytesIO()
-    wc = WordCloud(background_color='white', height=WORDCLOUD_IMAGE_HEIGHT, width=WORDCLOUD_IMAGE_WIDTH)
-    wc.fit_words(counts)
-    wc.to_image().save(img, format='PNG')
-    wordcloud_image = encode_image(img.getvalue())
 
     sample_data = selected_data.sample(min(len(selected_data), IMAGE_GALLERY_SIZE))
     image_paths = sample_data['image_path'].values
@@ -237,8 +240,15 @@ def scatterplot_is_updated(selected_data):
             image_cols.append(dbc.Col(html_image, className='gallery-col'))
         image_rows.append(dbc.Row(image_cols, className='gallery-row', justify='start'))
 
-    return wordcloud_image, table_records, image_rows
+    return wordcloud_data, table_records, image_rows
 
+@callback(
+    Output(component_id='projection-radio-buttons', component_property='value'), #this is a placeholder output
+    Input(component_id='wordcloud', component_property='click')
+)
+def wordcloud_is_clicked(item):
+    print(item)
+    return dash.no_update
 
 def encode_image(image):
     source = f'data:image/png;base64,{base64.b64encode(image).decode()}'
