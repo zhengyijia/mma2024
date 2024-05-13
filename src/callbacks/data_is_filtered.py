@@ -7,7 +7,7 @@ from src.widgets import wordcloud, gallery, scatterplot
 
 
 @callback(
-    [Output('wordcloud', 'src'),
+    [Output('wordcloud', 'list'),
      Output("grid", "rowData"),
      Output("gallery", "children"),
      Output('scatterplot', 'figure')],
@@ -42,12 +42,13 @@ def data_is_filtered(scatterplot_fig, scatterplot_selection, table_selection):
     else:
         raise Exception(f'Unknown id triggered the callback: {dash.ctx.triggered_id}')
 
-    wordcloud_image = wordcloud.create_wordcloud_image(class_counts)
+    #wordcloud_image = wordcloud.create_wordcloud(class_counts)
+    wordcloud_data = group_by_count[['class_name', 'count_in_selection']].values
 
     sample_data = data_selected.sample(min(len(data_selected), config.IMAGE_GALLERY_SIZE), random_state=1)
     gallery_children = gallery.create_gallery_children(sample_data['image_path'].values, sample_data['class_name'].values)
 
-    return wordcloud_image, table_rows, gallery_children, scatterplot_fig
+    return wordcloud_data, table_rows, gallery_children, scatterplot_fig
 
 
 def get_data_selected_on_scatterplot(scatterplot_fig):

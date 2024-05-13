@@ -2,3 +2,4 @@ dataset
 .idea
 .venv
 **/__pychache__/
+src/main_*
