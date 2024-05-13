@@ -13,9 +13,10 @@ from src.widgets import wordcloud, gallery, scatterplot
      Output('scatterplot', 'figure')],
     State('scatterplot', 'figure'),
     [Input('scatterplot', 'selectedData'),
-    Input("grid", "selectedRows")]
+    Input("grid", "selectedRows"),
+    Input("wordcloud","click")]
 )
-def data_is_filtered(scatterplot_fig, scatterplot_selection, table_selection):
+def data_is_filtered(scatterplot_fig, scatterplot_selection, table_selection, wc_selection):
     print('Data is filtered using', dash.ctx.triggered_id)
 
     data_selected = get_data_selected_on_scatterplot(scatterplot_fig)
@@ -31,6 +32,8 @@ def data_is_filtered(scatterplot_fig, scatterplot_selection, table_selection):
         table_rows = group_by_count.sort_values('count_in_selection', ascending=False).to_dict("records")
         scatterplot.highlight_class_on_scatterplot(scatterplot_fig, None)
         class_counts = {row['class_name']: row['count_in_selection'] for _, row in group_by_count.iterrows()}
+        print(group_by_count)
+        wordcloud_data = group_by_count[['class_name', 'count_in_selection']].values
 
     elif dash.ctx.triggered_id == 'grid' and table_selection:
         selected_classes = set(map(lambda row: row['class_id'], table_selection))
@@ -38,12 +41,20 @@ def data_is_filtered(scatterplot_fig, scatterplot_selection, table_selection):
         scatterplot.highlight_class_on_scatterplot(scatterplot_fig, selected_classes)
         class_counts = {row['class_name']: row['count_in_selection'] for row in table_selection}
         table_rows = dash.no_update
+        #wordcloud_data = [[key, value] for key, value in class_counts.items()]
+        print(data_selected)
+        #wordcloud_data = data_selected
+
+    # elif dash.ctx.triggered_id == "wordcloud":
+    #     print(wc_selection)
+    #     selected_classes = set(map(lambda row: row['class_id'], wc_selection[0]))
+    #     data_selected = data_selected[data_selected['class_id'].isin(selected_classes)]
+    #     scatterplot.highlight_class_on_scatterplot(scatterplot_fig, selected_classes)
+    #     class_counts = {row['class_name']: row['count_in_selection'] for row in table_selection}
+    #     table_rows = dash.no_update
 
     else:
         raise Exception(f'Unknown id triggered the callback: {dash.ctx.triggered_id}')
-
-    #wordcloud_image = wordcloud.create_wordcloud(class_counts)
-    wordcloud_data = group_by_count[['class_name', 'count_in_selection']].values
 
     sample_data = data_selected.sample(min(len(data_selected), config.IMAGE_GALLERY_SIZE), random_state=1)
     gallery_children = gallery.create_gallery_children(sample_data['image_path'].values, sample_data['class_name'].values)

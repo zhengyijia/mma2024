@@ -33,3 +33,4 @@ def create_wordcloud():
         hover=True,
         weightFactor=10
     )
+    return wordcloud
