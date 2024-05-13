@@ -31,27 +31,32 @@ def data_is_filtered(scatterplot_fig, scatterplot_selection, table_selection, wc
         group_by_count['total_count'] = Dataset.class_count().loc[group_by_count['class_id']].values
         table_rows = group_by_count.sort_values('count_in_selection', ascending=False).to_dict("records")
         scatterplot.highlight_class_on_scatterplot(scatterplot_fig, None)
-        class_counts = {row['class_name']: row['count_in_selection'] for _, row in group_by_count.iterrows()}
-        print(group_by_count)
+        #class_counts = {row['class_name']: row['count_in_selection'] for _, row in group_by_count.iterrows()}
         wordcloud_data = group_by_count[['class_name', 'count_in_selection']].values
 
     elif dash.ctx.triggered_id == 'grid' and table_selection:
         selected_classes = set(map(lambda row: row['class_id'], table_selection))
         data_selected = data_selected[data_selected['class_id'].isin(selected_classes)]
         scatterplot.highlight_class_on_scatterplot(scatterplot_fig, selected_classes)
-        class_counts = {row['class_name']: row['count_in_selection'] for row in table_selection}
+        #class_counts = {row['class_name']: row['count_in_selection'] for row in table_selection}        
+        #wordcloud_data = [[key, int(value)] for key, value in class_counts.items()]
+        group_by_count = (data_selected.groupby(['class_id', 'class_name'])['class_id']
+                          .agg('count')
+                          .to_frame('count_in_selection')
+                          .reset_index())
+        wordcloud_data = group_by_count[['class_name', 'count_in_selection']].values
         table_rows = dash.no_update
-        #wordcloud_data = [[key, value] for key, value in class_counts.items()]
-        print(data_selected)
-        #wordcloud_data = data_selected
 
-    # elif dash.ctx.triggered_id == "wordcloud":
-    #     print(wc_selection)
-    #     selected_classes = set(map(lambda row: row['class_id'], wc_selection[0]))
-    #     data_selected = data_selected[data_selected['class_id'].isin(selected_classes)]
-    #     scatterplot.highlight_class_on_scatterplot(scatterplot_fig, selected_classes)
-    #     class_counts = {row['class_name']: row['count_in_selection'] for row in table_selection}
-    #     table_rows = dash.no_update
+    elif dash.ctx.triggered_id == "wordcloud":
+        selected_classes = [data_selected[data_selected['class_name']==wc_selection[0]]["class_id"].iloc[0]]
+        data_selected = data_selected[data_selected['class_id'].isin(selected_classes)]
+        scatterplot.highlight_class_on_scatterplot(scatterplot_fig, selected_classes)
+        group_by_count = (data_selected.groupby(['class_id', 'class_name'])['class_id']
+                          .agg('count')
+                          .to_frame('count_in_selection')
+                          .reset_index())
+        wordcloud_data = group_by_count[['class_name', 'count_in_selection']].values
+        table_rows = group_by_count.sort_values('count_in_selection', ascending=False).to_dict("records")
 
     else:
         raise Exception(f'Unknown id triggered the callback: {dash.ctx.triggered_id}')
